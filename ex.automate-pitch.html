@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf8">
+<title>Automate pitch</title>
+<style>
+  button {
+    color: white;
+    padding: 10px 20px;
+    font-size: large;
+    margin-bottom: 10px;
+    background: #96729E;
+    cursor: pointer;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, .15);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 1px 2px rgba(0, 0, 0, 0.25);
+  }
+  button:hover, [role="button"]:hover {
+    filter: brightness(1.2);
+    color: white;
+  }
+</style>
+</head>
+<body>
+<button onclick="play()">▶ play</button>
+<button onclick="stop()">STOP!!!!</button>
+  
+<script>
+const audioContext = new AudioContext();
+function load(files) {
+  return new Promise((resolve, reject) => {
+    const buffers = new Map;
+    files.forEach(f => {
+      fetch(f)
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+          buffers.set(f, audioBuffer);
+          if (buffers.size === files.length) {
+            resolve(buffers);
+          }
+        })
+        .catch(e => console.log('uff'));
+    });    
+  });
+}
+
+const notes = {
+  D1: {rate: 1/4, voices: 4},
+  D2: {rate: 1/2, voices: 4},
+  A2: {rate: 3/4, voices: 2},
+  D3: {rate: 1,   voices: 2},
+  A3: {rate: 3/2, voices: 2},
+  D4: {rate: 2,   voices: 2},
+  A4: {rate: 3,   voices: 2},
+  D5: {rate: 4,   voices: 2},
+  A5: {rate: 6,   voices: 2},
+  D6: {rate: 8,   voices: 2},
+  Fs: {rate: 10,  voices: 6},
+};
+
+const C3 = 130.81;
+const c3d150 = 150 / C3; // 1.1467013225;
+const SAMPLE = 'Roland-SC-88-Cello-C3-glued-01.wav';
+const sources = [];
+
+let to = null;
+
+function randRate200to400() {
+  const freq = rand(200, 400);
+  return freq / C3;
+}
+
+function rand(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
+const volume = audioContext.createGain();
+volume.connect(audioContext.destination);
+
+function play() {
+  //stop();
+  load([SAMPLE]).then(buffers => {
+    
+    // schedule volume automation
+    volume.gain.setValueAtTime(0,    audioContext.currentTime);
+    volume.gain.setTargetAtTime(0.1, audioContext.currentTime, 1);
+    volume.gain.setTargetAtTime(0.5, audioContext.currentTime + 10, 4);
+    volume.gain.setTargetAtTime(1.0, audioContext.currentTime + 14, 2);
+    volume.gain.setTargetAtTime(0,   audioContext.currentTime + 20, 0.5);
+            
+    for (let note in notes) {    
+      for (let i = 0; i < notes[note].voices; i++) {
+        const source = audioContext.createBufferSource();
+        source.buffer = buffers.get(SAMPLE);
+        source.loop = true;
+        
+        const initial = randRate200to400();
+        source.playbackRate.setValueAtTime(initial, audioContext.currentTime);
+        for (let i = 1; i < 9; i++) {
+          source.playbackRate.setTargetAtTime(initial + rand(-0.5, 0.5), audioContext.currentTime + rand(i - 0.5, i + 0.5), 2);
+        }
+        // FF
+        const finalRandom = initial + rand(-0.5, 0.5);
+        source.playbackRate.setTargetAtTime(finalRandom, audioContext.currentTime + 9, 2);
+        source.playbackRate.setValueAtTime(finalRandom, audioContext.currentTime + 10); // FF
+    
+        to = setTimeout(() => {
+          source.playbackRate.exponentialRampToValueAtTime(c3d150 * notes[note].rate, audioContext.currentTime + 4);
+          if (note === 'Fs' && i > 1) { // 2 "correct" and 4 detuned
+            source.detune.value = rand(-33, 33); // 100 cents = semitone
+          }          
+        }, 1000 * 10); // 10 seconds
+        
+        source.connect(volume);
+        source.start();
+        sources.push(source);
+      }
+    }
+  });
+}
+
+const releaseTime = 0.1;
+
+function stop() {
+  volume.gain.linearRampToValueAtTime(0, audioContext.currentTime + releaseTime);
+  for (let i = 0; i < sources.length; i++) {
+    sources[i] && sources[i].stop(audioContext.currentTime + 1);
+    delete sources[i];
+  }
+}
+
+</script>
+</body>
+</html>

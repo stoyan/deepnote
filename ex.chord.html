@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf8">
+<title></title>
+<style>
+.slider-wrapper {
+  display: inline-block;
+  width: 20px;
+  height: 150px;
+  padding: 10px;
+}
+
+.slider-wrapper input {
+  width: 150px;
+  height: 20px;
+  margin: 0;
+  transform-origin: 75px 75px;
+  transform: rotate(-90deg);
+}
+</style>
+</head>
+<body>
+<div id="buttons"></div>
+
+<script>
+const audioContext = new AudioContext();
+function load(files) {
+  return new Promise((resolve, reject) => {
+    const buffers = new Map;
+    files.forEach(f => {
+      fetch(f)
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+          buffers.set(f, audioBuffer);
+          if (buffers.size === files.length) {
+            resolve(buffers);
+          }
+        })
+        .catch(e => console.log('uff'));
+    });    
+  });
+}
+
+const notes = {
+  D1: {rate: 1/4, voices: 4},
+  D2: {rate: 1/2, voices: 4},
+  A2: {rate: 3/4, voices: 2},
+  D3: {rate: 1,   voices: 2},
+  A3: {rate: 3/2, voices: 2},
+  D4: {rate: 2,   voices: 2},
+  A4: {rate: 3,   voices: 2},
+  D5: {rate: 4,   voices: 2},
+  A5: {rate: 6,   voices: 2},
+  D6: {rate: 8,   voices: 2},
+  Fs: {rate: 10,  voices: 6},
+};
+
+const C3 = 130.81;
+const c3d150 = 150 / C3; // 1.1467013225;
+
+load(['Roland-SC-88-Cello-C3-glued-01.wav']).then(buffers => {
+  for (let note in notes) {
+    const source = audioContext.createBufferSource();
+    source.buffer = buffers.get('Roland-SC-88-Cello-C3-glued-01.wav');
+    source.loop = true;
+    source.playbackRate.value = c3d150 * notes[note].rate;
+    
+    const volume = audioContext.createGain();
+    volume.gain.value = 0;
+    source.connect(volume).connect(audioContext.destination);
+    source.start();
+    
+    const slider = document.createElement('div');
+    slider.className = 'slider-wrapper';
+    const range = document.createElement('input');
+    range.type = 'range';
+    range.min = 0;
+    range.max = 1;
+    range.step = 0.05;
+    range.value = 0;
+    range.oninput = (ev) => {
+      volume.gain.value = Number(ev.target.value);
+    };
+    slider.appendChild(document.createTextNode(note));
+    slider.appendChild(range);
+    buttons.appendChild(slider);
+  };
+});
+
+</script>
+</body>
+</html>
