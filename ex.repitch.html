@@ -24,6 +24,7 @@
 <body>
 <button onclick="play()">▶ play</button>
 <button onclick="stop()">STOP!!!!</button>
+<p><input type="checkbox" id="repitch" /> Repitch</p>
 
 <script>
 
@@ -41,7 +42,7 @@ function play() {
       sample = audioContext.createBufferSource();
       sample.buffer = audioBuffer;
       sample.loop = true;
-      sample.playbackRate.value = c3d150;
+      sample.playbackRate.value = repitch.checked ? c3d150 : 1;
       sample.connect(audioContext.destination);
       sample.start();
     })
