@@ -44,26 +44,26 @@ function play() {
     sample.start();
   }
   
-fetch('Roland-SC-88-Cello-C3-glued-01.wav')
-  .then(response => response.arrayBuffer())
-  .then(arrayBuffer => {
-    if (audioContext.decodeAudioData.length === 2) { // Safari
-      return new Promise(resolve => {
-        audioContext.decodeAudioData(arrayBuffer, buffer => { 
-          resolve(buffer);
+  fetch('Roland-SC-88-Cello-C3-glued-01.wav')
+    .then(response => response.arrayBuffer())
+    .then(arrayBuffer => {
+      if (audioContext.decodeAudioData.length === 2) { // Safari
+        return new Promise(resolve => {
+          audioContext.decodeAudioData(arrayBuffer, buffer => { 
+            resolve(buffer);
+          });
         });
-      });
-    } else {
-      return audioContext.decodeAudioData(arrayBuffer);  
-    }
-  })
-  .then(audioBuffer => {
-    sample = audioContext.createBufferSource();
-    sample.buffer = audioBuffer;
-    sample.connect(audioContext.destination);
-    sample.start();
-  })
-  .catch(e => console.error('uff', e));
+      } else {
+        return audioContext.decodeAudioData(arrayBuffer);  
+      }
+    })
+    .then(audioBuffer => {
+      sample = audioContext.createBufferSource();
+      sample.buffer = audioBuffer;
+      sample.connect(audioContext.destination);
+      sample.start();
+    })
+    .catch(e => console.error('uff', e));
 }
 
 function stop() {
