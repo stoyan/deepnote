@@ -1,1 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf8">
+<title>WebAudio: boots and cats</title>
+<style>
+  body {
+    font-family: monospace;
+    text-align: center;
+  }
+  button {
+    color: white;
+    font-size: large;
+    background: darkred;
     cursor: pointer;
+    border: 1px solid rgba(0, 0, 0, .15);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 1px 2px rgba(0, 0, 0, 0.25);    
+    display: inline-block;
+    height: 300px;
+    width: 300px;
+    border-radius: 50%;
+  }
+  button:hover, [role="button"]:hover {
+    filter: brightness(1.2);
+    color: white;
+  }
+  #cats {
+    height: 100px;
+    width: 100px;
+    background: red;
+  }
+</style>
+</head>
+<body>
+<button onclick="kick()">🥾🥾🥾<br><abbr title="shortcut key: B">B</abbr>oots</button>
+<button onclick="snare()" id="cats">🐈🐈🐈<br><abbr title="shortcut key: C, also X">C</abbr>ats</button>
+<p>Tip: Press B for Boots and C (or X) for Cats</p>
+<script>
+if (!window.AudioContext && window.webkitAudioContext) {
+  window.AudioContext = window.webkitAudioContext;
+}
+const audioContext = new AudioContext();
+
+function kick() {
+  const oscillator = audioContext.createOscillator();
+  oscillator.type = 'sine';
+  oscillator.frequency.value = 60;
+  oscillator.connect(audioContext.destination);
+  oscillator.start();
+  oscillator.stop(audioContext.currentTime + 0.1);
+
+  const oscillator2 = audioContext.createOscillator();
+  oscillator2.type = 'triangle';
+  oscillator2.frequency.value = 10;
+  oscillator2.connect(audioContext.destination);
+  oscillator2.start();
+  oscillator2.stop(audioContext.currentTime + 0.05);
+}
+
+const length = 0.05 * audioContext.sampleRate;
+const buffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
+let data = buffer.getChannelData(0);
+for (let i = 0; i < length; i++) {
+  data[i] = Math.random() - 1;
+}
+
+function snare() {
+  const source = audioContext.createBufferSource();
+  source.buffer = buffer;
+  source.connect(audioContext.destination);
+  source.start();
+}
+
+onkeydown = (e) => {
+  if (e.keyCode === 66) return kick();
+  if (e.keyCode === 67 || e.keyCode === 88) return snare();
+};
+</script>
+</body>
+</html>
