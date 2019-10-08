@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf8">
+<title>WebAudio: theremin</title>
+<style>
+  html {
+    height: 100%;
+  }
+  body {
+    font-family: monospace;
+    text-align: center;
+    height: 100%;
+  }
+  #pitch {
+    width: 1px;
+    height: 70%;
+    border-left: 1px solid rgb(0, 0, 0);
+    display: inline-block;
+    padding: 0;
+    margin: 0;
+    position: relative;
+    left: 40%;
+    top: -1px;
+  }
+  #volume {
+    width: 80%;
+    height: 1px;
+    border-top: 1px solid rgb(0, 0, 0);
+    display: inline-block;
+    position: relative;
+    padding: 0;
+    margin: 0;
+  }
+</style>
+</head>
+<body>
+<p><button id="power" onClick="turnOnOff()">Turn ON</button></p>
+<div id="pitch"></div>
+<div id="volume"></div>
+<p id="frequency"></p>
+Set the maximum frequency: <input type="range" max="20000" min="100" value="3000" onchange="updateMaxFreq(this)"/><span id="max-freq"></span>
+<script>
+if (!window.AudioContext && window.webkitAudioContext) {
+  window.AudioContext = window.webkitAudioContext;
+}
+
+let on = false;
+let pitchPos, volumePos;
+let audioContext, oscillator, gain;
+let maxFreq = 3000;
+
+function turnOnOff() {
+  if (on) {
+    oscillator.stop();
+    power.innerHTML = 'Turn ON';
+    on = false;
+    return;
+  }
+  on = true;
+  power.innerHTML = 'Turn OFF';
+  
+  resetControls();
+  
+  audioContext = audioContext || new AudioContext();
+  oscillator = audioContext.createOscillator();
+  oscillator.type = 'sine';
+  oscillator.frequency.value = 3000;
+  oscillator.start();
+  
+  gain = audioContext.createGain();
+  gain.gain.value = 1;
+
+  oscillator.connect(gain);
+  gain.connect(audioContext.destination);
+}
+
+function resetControls() {
+  pitchPos = document.getElementById('pitch').getBoundingClientRect();
+  volumePos = document.getElementById('volume').getBoundingClientRect();
+}
+
+function updateMaxFreq(i) {
+  maxFreq = Number(Number(i.value).toFixed());
+  document.getElementById('max-freq').innerText = maxFreq + 'Hz';
+}
+
+
+onmousemove = (e) => {
+  if (!on) {
+    return;
+  }
+  const freq = Number(maxFreq - (2 * maxFreq / volumePos.width) * Math.abs(e.clientX - pitchPos.x)).toFixed();
+  const clampedFreq = freq < 0 ? 0 : freq;
+  oscillator.frequency.value = clampedFreq;
+  
+  const volume = 1 - (e.clientY - pitchPos.y) / pitchPos.height;
+  const clampedVolume = volume < 0 ? 0 : volume > 1 ? 1 : volume;
+  gain.gain.value = clampedVolume;
+  
+  document.getElementById('frequency').innerText = clampedFreq + 'Hz @ ' + Number(clampedVolume * 100).toFixed(2) + '% volume' ;
+};
+
+onresize = resetControls;
+</script>
+</body>
+</html>
