@@ -39,7 +39,7 @@
 <div id="pitch"></div>
 <div id="volume"></div>
 <p id="frequency"></p>
-Set the maximum frequency: <input type="range" max="20000" min="100" value="3000" onchange="updateMaxFreq(this)"/><span id="max-freq"></span>
+Set the maximum frequency: <input type="range" max="20000" min="100" value="3000" onchange="updateMaxFreq(this)"/><span id="max-freq">3000Hz</span>
 <script>
 if (!window.AudioContext && window.webkitAudioContext) {
   window.AudioContext = window.webkitAudioContext;
